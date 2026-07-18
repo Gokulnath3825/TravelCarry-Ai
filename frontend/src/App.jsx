@@ -8,12 +8,18 @@ import {
   DollarSign, Sparkles, Map, AlertTriangle, ArrowRight, LogOut
 } from 'lucide-react';
 
-const INDIAN_CITIES = [
-  "Delhi", "Mumbai", "Bangalore", "Chennai", "Pune", "Kolkata", "Hyderabad",
-  "Ahmedabad", "Jaipur", "Surat", "Lucknow", "Kanpur", "Nagpur", "Indore",
-  "Bhopal", "Patna", "Vadodara", "Coimbatore", "Ludhiana", "Agra", "Madurai",
-  "Nashik", "Meerut", "Rajkot", "Varanasi", "Srinagar", "Amritsar", "Ranchi",
-  "Gwalior", "Vijayawada", "Jodhpur", "Raipur", "Kota", "Guwahati", "Chandigarh", "Trivandrum"
+const TAMIL_NADU_CITIES = [
+  "Chennai", "Coimbatore", "Madurai", "Tiruchirappalli (Trichy)", "Salem", 
+  "Tiruppur", "Erode", "Vellore", "Thoothukudi (Tuticorin)", "Tirunelveli", 
+  "Nagercoil", "Thanjavur", "Dindigul", "Ranipet", "Sivakasi", "Karur", 
+  "Udhagamandalam (Ooty)", "Kodaikanal", "Kanchipuram", "Tiruvannamalai", 
+  "Cuddalore", "Neyveli", "Hosur", "Karaikudi", "Pudukkottai", "Kumbakonam", 
+  "Pollachi", "Rajapalayam", "Gudiyatham", "Nagapattinam", "Mayiladuthurai", 
+  "Tindivanam", "Virudhunagar", "Ambur", "Vaniyambadi", "Valparai", 
+  "Chidambaram", "Namakkal", "Dharmapuri", "Krishnagiri", "Srivilliputhur", 
+  "Tenkasi", "Arani", "Attur", "Paramakudi", "Ramanathapuram", "Sankarankovil", 
+  "Coonoor", "Aruppukkottai", "Pattukkottai", "Kovilpatti", "Palani", 
+  "Theni", "Bodinayakanur", "Sirkazhi", "Dharapuram", "Mettupalayam", "Tiruchengodu"
 ];
 
 export default function App() {
@@ -1229,7 +1235,7 @@ function AIChatAssistant() {
       )}
 
       <datalist id="cities-list">
-        {INDIAN_CITIES.map(city => (
+        {TAMIL_NADU_CITIES.map(city => (
           <option key={city} value={city} />
         ))}
       </datalist>
