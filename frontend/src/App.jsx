@@ -8,6 +8,14 @@ import {
   DollarSign, Sparkles, Map, AlertTriangle, ArrowRight, LogOut
 } from 'lucide-react';
 
+const INDIAN_CITIES = [
+  "Delhi", "Mumbai", "Bangalore", "Chennai", "Pune", "Kolkata", "Hyderabad",
+  "Ahmedabad", "Jaipur", "Surat", "Lucknow", "Kanpur", "Nagpur", "Indore",
+  "Bhopal", "Patna", "Vadodara", "Coimbatore", "Ludhiana", "Agra", "Madurai",
+  "Nashik", "Meerut", "Rajkot", "Varanasi", "Srinagar", "Amritsar", "Ranchi",
+  "Gwalior", "Vijayawada", "Jodhpur", "Raipur", "Kota", "Guwahati", "Chandigarh", "Trivandrum"
+];
+
 export default function App() {
   const { user, token, login, logout } = useAuth();
   const [currentView, setCurrentView] = useState('landing'); // landing, login, register, dashboard, create-trip, create-parcel, matches, booking-details, wallet, carbon, admin
@@ -557,11 +565,11 @@ function CreateTripView({ userId, onSuccess }) {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Start City</label>
-            <input className="glass-input" required value={startCity} onChange={e => setStartCity(e.target.value)} placeholder="Delhi" />
+            <input className="glass-input" required value={startCity} onChange={e => setStartCity(e.target.value)} placeholder="Delhi" list="cities-list" />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Destination City</label>
-            <input className="glass-input" required value={endCity} onChange={e => setEndCity(e.target.value)} placeholder="Mumbai" />
+            <input className="glass-input" required value={endCity} onChange={e => setEndCity(e.target.value)} placeholder="Mumbai" list="cities-list" />
           </div>
         </div>
 
@@ -655,11 +663,11 @@ function CreateParcelView({ userId, onSuccess }) {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Start City</label>
-              <input className="glass-input" required value={startCity} onChange={e => setStartCity(e.target.value)} placeholder="Delhi" />
+              <input className="glass-input" required value={startCity} onChange={e => setStartCity(e.target.value)} placeholder="Delhi" list="cities-list" />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Destination City</label>
-              <input className="glass-input" required value={endCity} onChange={e => setEndCity(e.target.value)} placeholder="Mumbai" />
+              <input className="glass-input" required value={endCity} onChange={e => setEndCity(e.target.value)} placeholder="Mumbai" list="cities-list" />
             </div>
           </div>
 
@@ -1219,6 +1227,12 @@ function AIChatAssistant() {
           <Sparkles size={24} />
         </button>
       )}
+
+      <datalist id="cities-list">
+        {INDIAN_CITIES.map(city => (
+          <option key={city} value={city} />
+        ))}
+      </datalist>
     </div>
   );
 }
