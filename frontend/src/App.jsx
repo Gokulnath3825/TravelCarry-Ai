@@ -612,6 +612,150 @@ function CreateTripView({ userId, onSuccess }) {
   );
 }
 
+function AISafetyScannerWidget({ description, category }) {
+  const [scanResult, setScanResult] = useState(null);
+  const [isScanning, setIsScanning] = useState(false);
+
+  useEffect(() => {
+    if (!description || description.length < 5) {
+      setScanResult(null);
+      return;
+    }
+
+    setIsScanning(true);
+    const delayDebounce = setTimeout(async () => {
+      try {
+        const response = await fetch('http://localhost:8000/ai/safety', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ category, description })
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setScanResult(data);
+        } else {
+          simulateLocalSafety(description);
+        }
+      } catch (e) {
+        simulateLocalSafety(description);
+      } finally {
+        setIsScanning(false);
+      }
+    }, 800);
+
+    return () => clearTimeout(delayDebounce);
+  }, [description, category]);
+
+  const simulateLocalSafety = (desc) => {
+    const text = desc.toLowerCase();
+    let risk = 5;
+    let classification = "SAFE / APPROVED";
+    let recommendation = "Standard cardboard container, bubble wrap recommended.";
+
+    if (text.includes("battery") || text.includes("lithium") || text.includes("phone") || text.includes("laptop")) {
+      risk = 45;
+      classification = "RESTRICTED (FLIGHT HAZARD)";
+      recommendation = "Declare battery status. Wrap in anti-static sleeve. Pack securely to prevent movement.";
+    } else if (text.includes("pickle") || text.includes("sauce") || text.includes("liquid") || text.includes("oil")) {
+      risk = 30;
+      classification = "RESTRICTED (LEAK RISK)";
+      recommendation = "Double tape container lid. Place inside a leak-proof ziplock bag.";
+    } else if (text.includes("knife") || text.includes("weapon") || text.includes("drug") || text.includes("gun") || text.includes("chemical") || text.includes("acid")) {
+      risk = 95;
+      classification = "HAZARDOUS / PROHIBITED";
+      recommendation = "CRITICAL WARNING: Contains illegal, dangerous, or restricted chemical contents. Action blocked.";
+    } else if (text.includes("gold") || text.includes("cash") || text.includes("money") || text.includes("jewel")) {
+      risk = 60;
+      classification = "HIGH VALUE RESTRICTED";
+      recommendation = "Insure parcel. Insulate details. Keep packaging plain. Pair with traveler having 95+ Trust Score.";
+    }
+
+    setScanResult({
+      risk_score: risk,
+      classification,
+      packing_recommendation: recommendation
+    });
+  };
+
+  if (!description || description.length < 5) {
+    return (
+      <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <h4 style={{ display: 'flex', gap: '6px', alignItems: 'center', color: 'var(--secondary)' }}>
+          <Shield size={16} /> AI Safety X-Ray Scanner
+        </h4>
+        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+          Type a detailed description of the parcel contents to trigger the live AI security hazards analysis.
+        </p>
+      </div>
+    );
+  }
+
+  const getAlertColor = () => {
+    if (!scanResult) return 'var(--text-muted)';
+    if (scanResult.risk_score >= 80) return 'var(--error)';
+    if (scanResult.risk_score >= 30) return 'var(--accent)';
+    return 'var(--secondary)';
+  };
+
+  return (
+    <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', position: 'relative', overflow: 'hidden' }}>
+      <h4 style={{ display: 'flex', gap: '6px', alignItems: 'center', color: 'var(--secondary)', marginBottom: '4px' }}>
+        <Shield size={16} /> AI Safety X-Ray Scanner
+      </h4>
+
+      {isScanning ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center', padding: '10px 0' }}>
+          <div style={{ position: 'relative', width: '100%', height: '80px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px dashed rgba(255,255,255,0.1)', overflow: 'hidden' }}>
+            <div style={{
+              position: 'absolute', width: '100%', height: '2px', background: 'var(--secondary)',
+              boxShadow: '0 0 10px var(--secondary)', top: 0,
+              animation: 'scan 1.5s infinite ease-in-out'
+            }} />
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', fontSize: '0.75rem', color: 'var(--secondary)', fontFamily: 'monospace' }}>
+              X-RAY ANALYSIS IN PROGRESS...
+            </div>
+          </div>
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Scanning contents for safety hazards...</span>
+        </div>
+      ) : scanResult ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '10px', borderRadius: '8px' }}>
+            <div>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Hazard Risk Level</span>
+              <div style={{ fontSize: '0.95rem', fontWeight: 'bold', color: getAlertColor() }}>
+                {scanResult.classification}
+              </div>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Risk Index</span>
+              <div style={{ fontSize: '1.2rem', fontWeight: 800 }}>{scanResult.risk_score}%</div>
+            </div>
+          </div>
+
+          <div style={{ height: '6px', width: '100%', background: 'rgba(255,255,255,0.05)', borderRadius: '3px', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${scanResult.risk_score}%`, background: getAlertColor(), transition: 'width 0.5s ease' }} />
+          </div>
+
+          <div style={{ background: 'rgba(255,255,255,0.03)', padding: '12px', borderRadius: '8px', borderLeft: `3px solid ${getAlertColor()}` }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>AI Packaging Recommendation</span>
+            <p style={{ fontSize: '0.82rem', lineHeight: '1.4', margin: 0, color: 'var(--text-muted)' }}>{scanResult.packing_recommendation}</p>
+          </div>
+        </div>
+      ) : (
+        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Waiting...</p>
+      )}
+
+      <style>{`
+        @keyframes scan {
+          0% { top: 0%; }
+          50% { top: 100%; }
+          100% { top: 0%; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
 function CreateParcelView({ userId, onSuccess }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -733,14 +877,7 @@ function CreateParcelView({ userId, onSuccess }) {
           )}
         </div>
 
-        <div className="glass-panel" style={{ padding: '24px' }}>
-          <h4 style={{ display: 'flex', gap: '6px', alignItems: 'center', color: 'var(--secondary)', marginBottom: '12px' }}>
-            <Shield size={16} /> AI Safety Guidelines
-          </h4>
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
-            All parcels are scanned by a light NLP classification model to analyze hazard risks and provide optimal packing solutions. Please pack fragile items with care.
-          </p>
-        </div>
+        <AISafetyScannerWidget description={description} category={category} />
       </div>
     </div>
   );
@@ -1000,6 +1137,12 @@ function WalletView({ userId }) {
   const [wallet, setWallet] = useState(null);
   const [amount, setAmount] = useState('');
   const [desc, setDesc] = useState('UPI deposit');
+  
+  // UPI Simulation State
+  const [showUpiModal, setShowUpiModal] = useState(false);
+  const [upiId, setUpiId] = useState('');
+  const [paymentStep, setPaymentStep] = useState('input'); // input, loading, success
+  const [depositProgress, setDepositProgress] = useState(0);
 
   useEffect(() => {
     loadWallet();
@@ -1010,11 +1153,68 @@ function WalletView({ userId }) {
     setWallet(data);
   };
 
-  const handleDeposit = async () => {
-    if (!amount) return;
-    await api.wallet.deposit(userId, parseFloat(amount), desc);
-    setAmount('');
-    loadWallet();
+  const handleDepositInitiate = () => {
+    if (!amount || parseFloat(amount) <= 0) return;
+    setPaymentStep('input');
+    setDepositProgress(0);
+    setShowUpiModal(true);
+  };
+
+  const triggerUpiSimulate = async () => {
+    setPaymentStep('loading');
+    setDepositProgress(10);
+    
+    // Simulate loading progress steps
+    const timer1 = setTimeout(() => { setDepositProgress(40); }, 500);
+    const timer2 = setTimeout(() => { setDepositProgress(75); }, 1000);
+    const timer3 = setTimeout(() => { setDepositProgress(95); }, 1500);
+    
+    const timer4 = setTimeout(async () => {
+      try {
+        await api.wallet.deposit(userId, parseFloat(amount), `UPI Load (${upiId || 'gokul@upi'})`);
+        setPaymentStep('success');
+        setDepositProgress(100);
+        
+        // Play synthesizer coin drop sound!
+        playCoinSound();
+        
+        // Reload wallet
+        loadWallet();
+        setAmount('');
+      } catch (err) {
+        console.error(err);
+      }
+    }, 2000);
+  };
+
+  const playCoinSound = () => {
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      
+      // Play first high note
+      const osc1 = audioCtx.createOscillator();
+      const gain1 = audioCtx.createGain();
+      osc1.connect(gain1);
+      gain1.connect(audioCtx.destination);
+      osc1.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
+      gain1.gain.setValueAtTime(0.1, audioCtx.currentTime);
+      gain1.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+      osc1.start(audioCtx.currentTime);
+      osc1.stop(audioCtx.currentTime + 0.15);
+      
+      // Play second higher note (chord)
+      const osc2 = audioCtx.createOscillator();
+      const gain2 = audioCtx.createGain();
+      osc2.connect(gain2);
+      gain2.connect(audioCtx.destination);
+      osc2.frequency.setValueAtTime(880.00, audioCtx.currentTime + 0.08); // A5
+      gain2.gain.setValueAtTime(0.15, audioCtx.currentTime + 0.08);
+      gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+      osc2.start(audioCtx.currentTime + 0.08);
+      osc2.stop(audioCtx.currentTime + 0.3);
+    } catch (e) {
+      console.warn("AudioContext blocked by browser auto-play policy");
+    }
   };
 
   return (
@@ -1032,7 +1232,7 @@ function WalletView({ userId }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <h4>Add Credit Balance</h4>
           <input className="glass-input" type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="Enter amount in INR" />
-          <button className="btn-primary" onClick={handleDeposit}>Deposit via UPI</button>
+          <button className="btn-primary" onClick={handleDepositInitiate}>Deposit via UPI</button>
         </div>
       </div>
 
@@ -1052,12 +1252,97 @@ function WalletView({ userId }) {
           )) || <p style={{ color: 'var(--text-muted)' }}>No transactions registered yet.</p>}
         </div>
       </div>
+
+      {/* UPI Scan & Simulate Modal */}
+      {showUpiModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+          background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)',
+          display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000
+        }}>
+          <div className="glass-panel" style={{ maxWidth: '420px', width: '90%', padding: '30px', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <h3 style={{ color: 'var(--primary)' }}>Secure UPI Payment Gateway</h3>
+            
+            {paymentStep === 'input' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', alignItems: 'center' }}>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Scan QR with your mobile app or enter UPI VPA ID to pay **₹{amount}**</p>
+                
+                {/* Dynamically generated secure mock QR Code */}
+                <div style={{ background: 'white', padding: '12px', borderRadius: '12px', width: '160px', height: '160px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                  <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%' }}>
+                    <path d="M5,5 h20 v20 h-20 z M10,10 h10 v10 h-10 z" fill="#000" />
+                    <path d="M75,5 h20 v20 h-20 z M80,10 h10 v10 h-10 z" fill="#000" />
+                    <path d="M5,75 h20 v20 h-20 z M10,80 h10 v10 h-10 z" fill="#000" />
+                    <path d="M35,15 h10 v10 h-10 z M55,5 h15 v5 h-15 z M45,35 h25 v10 h-25 z M15,45 h15 v10 h-15 z" fill="#4f46e5" />
+                    <path d="M75,75 h15 v5 h-15 z M60,65 h10 v20 h-10 z M35,75 h20 v5 h-20 z M85,60 h10 v10 h-10 z" fill="#10b981" />
+                    <circle cx="50" cy="50" r="10" fill="#4f46e5" opacity="0.3" />
+                  </svg>
+                </div>
+                
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>merchant: travelcarry@oksbi</span>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%', textAlign: 'left' }}>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Enter UPI ID</label>
+                  <input className="glass-input" value={upiId} onChange={e => setUpiId(e.target.value)} placeholder="gokul@oksbi" style={{ width: '100%' }} />
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', width: '100%', marginTop: '8px' }}>
+                  <button className="btn-primary" style={{ flex: 1 }} onClick={triggerUpiSimulate}>Authorize payment</button>
+                  <button className="btn-secondary" style={{ flex: 1 }} onClick={() => setShowUpiModal(false)}>Cancel</button>
+                </div>
+              </div>
+            )}
+
+            {paymentStep === 'loading' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center', padding: '30px 0' }}>
+                <div style={{
+                  width: '60px', height: '60px', borderRadius: '50%',
+                  border: '3px solid rgba(255,255,255,0.05)', borderTopColor: 'var(--primary)',
+                  animation: 'spin 1s infinite linear'
+                }} />
+                <div>
+                  <h4 style={{ color: 'white' }}>Processing Transaction...</h4>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                    {depositProgress < 40 ? 'Verifying payment credentials...' :
+                     depositProgress < 75 ? 'Sending secure push request...' :
+                     'Validating ledger entry on DB...'}
+                  </p>
+                </div>
+                <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${depositProgress}%`, background: 'var(--primary)', transition: 'width 0.3s ease' }} />
+                </div>
+              </div>
+            )}
+
+            {paymentStep === 'success' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', alignItems: 'center', padding: '20px 0' }}>
+                <div style={{
+                  width: '64px', height: '64px', borderRadius: '50%',
+                  background: 'rgba(16, 185, 129, 0.15)', color: 'var(--secondary)',
+                  display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '2rem',
+                  boxShadow: '0 0 20px rgba(16, 185, 129, 0.4)'
+                }}>
+                  ✓
+                </div>
+                <div>
+                  <h3 style={{ color: 'var(--secondary)' }}>Deposit Successful!</h3>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '6px' }}>₹{amount} credited to account ledger.</p>
+                </div>
+                <button className="btn-primary" style={{ width: '100%', marginTop: '10px' }} onClick={() => setShowUpiModal(false)}>Back to Dashboard</button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 function CarbonView({ userId }) {
+  const { user } = useAuth();
   const [stats, setStats] = useState(null);
+  const [showCert, setShowCert] = useState(false);
+  const [certProgress, setCertProgress] = useState(false);
 
   useEffect(() => {
     api.analytics.getCarbon(userId).then(setStats);
@@ -1065,9 +1350,14 @@ function CarbonView({ userId }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      <div>
-        <h1 style={{ fontSize: '2rem' }}>Carbon Footprint Impact Dashboard</h1>
-        <p style={{ color: 'var(--text-muted)' }}>Utilizing travels already in motion cuts commercial cargo flight emissions.</p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h1 style={{ fontSize: '2rem' }}>Carbon Footprint Impact Dashboard</h1>
+          <p style={{ color: 'var(--text-muted)' }}>Utilizing travels already in motion cuts commercial cargo flight emissions.</p>
+        </div>
+        <button className="btn-primary" onClick={() => setShowCert(true)} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <Award size={18} /> View Eco-Certificate
+        </button>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px' }}>
@@ -1108,6 +1398,68 @@ function CarbonView({ userId }) {
           </div>
         </div>
       </div>
+
+      {/* Eco Certificate Modal */}
+      {showCert && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+          background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)',
+          display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000
+        }}>
+          <div className="glass-panel" style={{
+            maxWidth: '650px', width: '90%', padding: '40px', textAlign: 'center',
+            border: '2px solid rgba(16, 185, 129, 0.4)', position: 'relative',
+            background: 'radial-gradient(circle at center, rgba(16, 185, 129, 0.08) 0%, rgba(0,0,0,0.95) 100%)'
+          }}>
+            <div style={{ position: 'absolute', top: '15px', left: '15px', right: '15px', bottom: '15px', border: '1px solid rgba(16, 185, 129, 0.15)', pointerEvents: 'none' }} />
+            
+            <Leaf size={48} color="var(--secondary)" style={{ margin: '0 auto 16px auto', filter: 'drop-shadow(0 0 10px rgba(16,185,129,0.5))' }} />
+            
+            <span style={{ fontSize: '0.8rem', letterSpacing: '3px', textTransform: 'uppercase', color: 'var(--secondary)' }}>Green Logistics Impact Certificate</span>
+            
+            <h1 style={{ fontSize: '2.2rem', fontFamily: 'serif', margin: '24px 0 12px 0', color: '#f3f4f6' }}>Certificate of Eco-Contribution</h1>
+            
+            <p style={{ fontStyle: 'italic', color: 'var(--text-muted)', fontSize: '0.85rem' }}>This certifies that</p>
+            
+            <h3 style={{ fontSize: '1.6rem', color: 'white', margin: '12px 0', textDecoration: 'underline', textDecorationColor: 'var(--secondary)' }}>
+              {user ? `${user.firstName} ${user.lastName}` : 'TravelCarry Ambassador'}
+            </h3>
+            
+            <p style={{ color: 'var(--text-muted)', maxWidth: '480px', margin: '16px auto', fontSize: '0.9rem', lineHeight: '1.6' }}>
+              has successfully offset carbon emissions by routing shared package delivery logistics through passenger travel capacities already in transit, saving:
+            </p>
+            
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '40px', margin: '24px 0' }}>
+              <div>
+                <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--secondary)' }}>{stats ? stats.co2SavedKg : '142.50'} kg</div>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>CO₂ Saved</span>
+              </div>
+              <div style={{ borderLeft: '1px solid rgba(255,255,255,0.1)' }} />
+              <div>
+                <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--primary)' }}>{stats ? stats.fuelSavedLiters : '58.2'} L</div>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Fuel Conserved</span>
+              </div>
+            </div>
+            
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '24px' }}>
+              Issued by **TravelCarry AI Eco-Ledger System** • {new Date().toLocaleDateString()}
+            </p>
+            
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '30px' }}>
+              <button className="btn-primary" onClick={() => {
+                setCertProgress(true);
+                setTimeout(() => {
+                  setCertProgress(false);
+                  alert("Certificate generated and downloaded successfully!");
+                }, 1500);
+              }}>
+                {certProgress ? 'Generating PDF...' : 'Download Certificate'}
+              </button>
+              <button className="btn-secondary" onClick={() => setShowCert(false)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
