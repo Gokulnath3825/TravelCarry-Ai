@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+pydantic>=2.9.0
+scikit-learn
+pandas
+numpy
+networkx
+requests

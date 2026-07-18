@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  database:
+    image: postgres:15-alpine
+    container_name: travelcarry-db
+    environment:
+      POSTGRES_DB: travelcarry
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/1-schema.sql
+      - ./database/seed.sql:/docker-entrypoint-initdb.d/2-seed.sql
+
+  ai-service:
+    build:
+      context: ./ai-service
+    container_name: travelcarry-ai
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+    depends_on:
+      - database
+
+  backend:
+    build:
+      context: ./backend
+    container_name: travelcarry-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_HOST=database
+      - DB_PORT=5432
+      - DB_NAME=travelcarry
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - AI_SERVICE_URL=http://ai-service:8000
+    depends_on:
+      - database
+      - ai-service
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: travelcarry-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

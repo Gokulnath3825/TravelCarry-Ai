@@ -1,0 +1,24 @@
+# Maven/Java
+**/target/
+*.class
+
+# Node/React
+**/node_modules/
+**/dist/
+frontend/.env.local
+
+# Python
+**/__pycache__/
+**/*.pyc
+venv/
+ai-service/venv/
+.ipynb_checkpoints/
+
+# IDEs & System
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+.DS_Store
